@@ -1,13 +1,23 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import database from '@react-native-firebase/database';
+import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
+import { View, Text, StyleSheet } from 'react-native';
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>PandaHabit</Text>
-      <StatusBar style="auto" />
+      <SQLiteProvider databaseName="test.db" assetSource={{ assetId: require('./app/assets/test.db') }}>
+        <Main />
+      </SQLiteProvider>
     </View>
+  );
+}
+
+export function Main() {
+  const db = useSQLiteContext();
+  console.log('sqlite version', db.getFirstSync('SELECT sqlite_version()'));
+  return (
+  <View>
+    <Text>Panda Habit</Text>
+  </View>
   );
 }
 
@@ -17,6 +27,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    marginTop: 200
+    marginTop: 200,
   },
 });
