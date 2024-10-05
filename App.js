@@ -10,17 +10,14 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-     <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="IntroduceNavigation" component={IntroduceNavigation} />
-        </Stack.Navigator>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="IntroduceNavigation" component={IntroduceNavigation} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
   title: {
     fontWeight: 'bold',
     fontSize: 24,
