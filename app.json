@@ -18,7 +18,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.mwawryniak.PandaHabit"
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
