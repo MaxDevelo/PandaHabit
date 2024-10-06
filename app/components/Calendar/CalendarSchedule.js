@@ -9,6 +9,7 @@ import {
   Dimensions,
   SafeAreaView,
   TouchableWithoutFeedback,
+  ScrollView,
 } from 'react-native';
 import Swiper from 'react-native-swiper';
 import moment from 'moment';
@@ -25,31 +26,32 @@ moment.updateLocale('en', {
 
 const CalendarSchedule = () => {
   const swiper = useRef();
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [week, setWeek] = useState(0);
+  // Utiliser la date actuelle comme date sélectionnée par défaut
+  const [selectedDate, setSelectedDate] = useState(moment().toDate());
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const [periods] = useState([
-    { title: 'All Day', image: require('../../assets/calendar/Period/Morning.png') },
-    { title: 'Morning', image: require('../../assets/calendar/Period/Morning.png') },
-    { title: 'Afternoon', image: require('../../assets/calendar/Period/Afternoon.png') },
-    { title: 'Evening', image: require('../../assets/calendar/Period/Evening.png') },
+    { title: 'All Day', image: require('../../assets/calendar/Period/Morning.png'), dayTextColor: '#111' },
+    { title: 'Morning', image: require('../../assets/calendar/Period/Morning.png'), dayTextColor: '#111' },
+    { title: 'Afternoon', image: require('../../assets/calendar/Period/Afternoon.png'), dayTextColor: '#111' },
+    { title: 'Evening', image: require('../../assets/calendar/Period/Evening.png'), dayTextColor: '#fff' },
   ]);
 
   const [selectedPeriod, setSelectedPeriod] = useState(periods[1]);
 
   // Calculer les semaines affichées dans le Swiper
   const weeks = useMemo(() => {
-    const start = moment().add(week, 'weeks').startOf('week'); // Utiliser la configuration de la locale (lundi comme début)
     return [-1, 0, 1].map((adj) => {
+      const start = moment().add(weekOffset + adj, 'weeks').startOf('week');
       return Array.from({ length: 7 }).map((_, index) => {
-        const date = moment(start).add(adj, 'week').add(index, 'day');
+        const date = moment(start).add(index, 'day');
         return {
           weekday: date.format('ddd'),
           date: date.toDate(),
         };
       });
     });
-  }, [week]);
+  }, [weekOffset]);
 
   // Formater la date pour l'affichage
   const formatDate = (date) => {
@@ -57,14 +59,15 @@ const CalendarSchedule = () => {
     return date.toLocaleDateString('en-US', options);
   };
 
-  // Logique de changement de semaine
+  // Logique de changement de semaine avec mise à jour de la sélection sur la date actuelle
   const handleWeekChange = (newIndex) => {
-    const currentDayOfWeek = moment(selectedDate).day(); // Récupérer le jour de la semaine actuel
-    const newSelectedDate = moment(selectedDate)
-      .add(newIndex, 'week') // Ajouter (ou soustraire) la semaine
-      .day(currentDayOfWeek) // Rester sur le même jour de la semaine
-      .toDate();
-    setSelectedDate(newSelectedDate);
+    const newWeekOffset = weekOffset + newIndex;
+    setWeekOffset(newWeekOffset);
+    // Maintenir la date actuelle si elle est dans la nouvelle semaine, sinon sélectionner le lundi
+    const newMonday = moment().add(newWeekOffset, 'weeks').startOf('week').toDate();
+    const currentWeek = weeks[1];
+    const isCurrentDateInNewWeek = currentWeek.some((day) => day.date.toDateString() === selectedDate.toDateString());
+    setSelectedDate(isCurrentDateInNewWeek ? selectedDate : newMonday);
   };
 
   return (
@@ -73,7 +76,7 @@ const CalendarSchedule = () => {
       <ImageBackground source={selectedPeriod.image} style={styles.calendarBackground}>
         <View style={styles.header}>
           <Image source={require('../../assets/calendar/icon.png')} />
-          <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
+          <Text style={[styles.dateText, {color: selectedPeriod.dayTextColor}]}>{formatDate(selectedDate)}</Text>
         </View>
 
         {/* Navigation Horizontale de la Semaine */}
@@ -81,20 +84,11 @@ const CalendarSchedule = () => {
           <Swiper
             index={1}
             ref={swiper}
-            loop={false}
+            loop={false} // Désactiver la boucle pour éviter les comportements indésirables
             showsPagination={false}
             style={styles.calendar}
             containerStyle={{ height: 74 }}
-            onIndexChanged={(ind) => {
-              if (ind === 1) return;
-              setTimeout(() => {
-                const newIndex = ind - 1;
-                const newWeek = week + newIndex;
-                setWeek(newWeek);
-                handleWeekChange(newIndex); // Mise à jour de la date sélectionnée en gardant le même jour de la semaine
-                swiper.current.scrollTo(1, false);
-              }, 100);
-            }}
+            scrollEnabled={false}
           >
             {weeks.map((dates, index) => (
               <View style={styles.itemRow} key={index}>
@@ -114,10 +108,10 @@ const CalendarSchedule = () => {
                           },
                         ]}
                       >
-                        <Text style={[styles.itemWeekday, isActive && { color: '#fff' }]}>
+                        <Text style={[styles.itemWeekday, isActive ? { color: '#fff' } : {color: selectedPeriod.dayTextColor}]}>
                           {item.weekday}
                         </Text>
-                        <Text style={[styles.itemDate, isActive && { color: '#fff' }]}>
+                        <Text style={[styles.itemDate, isActive ? { color: '#fff' } : {color: selectedPeriod.dayTextColor}]}>
                           {item.date.getDate()}
                         </Text>
                       </View>
@@ -133,8 +127,13 @@ const CalendarSchedule = () => {
       {/* Gradient en bas */}
       <LinearGradient colors={['transparent', '#9c9c9c']} style={styles.gradientBottom} start={{ x: 0.5, y: 1 }} end={{ x: 0.5, y: 0 }} />
 
-      {/* Sélecteur de périodes */}
-      <View style={styles.timePeriodContainer}>
+      {/* Sélecteur de périodes avec ScrollView */}
+      <ScrollView
+        horizontal={true}
+        showsHorizontalScrollIndicator={false} // Masquer la barre de défilement
+        style={styles.scrollView}
+        contentContainerStyle={styles.timePeriodContainer}
+      >
         {periods.map((period) => (
           <TouchableOpacity key={period.title} onPress={() => setSelectedPeriod(period)} style={styles.periodButton}>
             <Text style={[styles.timePeriodText, selectedPeriod.title === period.title ? styles.selectedPeriod : null]}>
@@ -142,7 +141,7 @@ const CalendarSchedule = () => {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {/* Affichage de la date et de la période sélectionnées */}
       <View style={styles.selectionInfo}>
@@ -155,14 +154,12 @@ const CalendarSchedule = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, marginTop: '10%' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, marginTop: '15%' },
   dateText: { fontSize: 24, fontWeight: '900', marginStart: 10 },
-  calendarBackground: { overflow: 'hidden', paddingBottom: 100 },
+  calendarBackground: { overflow: 'hidden', paddingBottom: 80 },
   picker: {
-    flex: 1,
-    maxHeight: 74,
-    paddingVertical: 12,
+    maxHeight: 200,
+    paddingBottom: 50,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -183,19 +180,21 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
   },
-  itemWeekday: { fontSize: 13, fontWeight: '500', color: '#737373', marginBottom: 4 },
-  itemDate: { fontSize: 15, fontWeight: '600', color: '#111' },
-  gradientBottom: { height: 15 },
-  timePeriodContainer: { flexDirection: 'row', justifyContent: 'center', padding: 10, backgroundColor: '#f5f5f5' },
+  itemWeekday: { fontSize: 15, fontWeight: '900', marginBottom: 4 },
+  itemDate: { fontSize: 15, fontWeight: '600' },
+  gradientBottom: { height: 10 },
+  scrollView: {
+  },
+  timePeriodContainer: { flexDirection: 'row', },
   periodButton: { marginHorizontal: 20, marginTop: 10, padding: 10 },
   timePeriodText: { fontSize: 25, color: 'gray', fontWeight: 'bold' },
-  selectedPeriod: { color: '#87a730', fontWeight: 'bold' },
+  selectedPeriod: { color: '#fc79b7', fontWeight: 'bold' },
   selectionInfo: { alignItems: 'center', marginTop: 20 },
   infoText: { fontSize: 18, fontWeight: '500' },
   calendar: {
     height: 200,
-      marginTop: 20
-  }
+    marginTop: 20,
+  },
 });
 
 export default CalendarSchedule;

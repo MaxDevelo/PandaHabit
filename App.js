@@ -4,6 +4,7 @@ import { View, Text, Button, TextInput, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import IntroduceNavigation from './app/navigation/IntroduceNavigation';
+import BottomTabNav from './app/navigation/BottomTabNav';
 
 const Stack = createNativeStackNavigator();
 
